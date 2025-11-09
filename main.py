@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 import re
 
-app = FastAPI(title="Gitee文件上传API")
+app = FastAPI(title="GitHub文件上传API")
 
 # 允许跨域
 app.add_middleware(
@@ -96,14 +96,14 @@ def process_json_content(file_content: bytes):
 def get_folder_name(file_type):
     """根据文件类型返回文件夹名称"""
     if file_type == "book_source":
-        return "书源"
+        return "book-sources"
     elif file_type == "subscription_source":
-        return "订阅源"
+        return "subscription-sources"
     else:
-        return "其他"
+        return "others"
 
 @app.post("/upload")
-async def upload_file_to_gitee(
+async def upload_file_to_github(
     repo_name: str = Form(...),
     branch: str = Form(...),
     commit_message: str = Form(...),
@@ -111,7 +111,7 @@ async def upload_file_to_gitee(
     file: UploadFile = File(...)
 ):
     """
-    上传文件到Gitee仓库，返回文件路径（直链）
+    上传文件到GitHub仓库，返回文件路径（直链）
     """
     try:
         # 读取文件内容
@@ -131,28 +131,23 @@ async def upload_file_to_gitee(
         file_name = f"{name_value}.json"
         file_path = f"{folder_name}/{file_name}"
         
-        # Gitee API配置
-        base_url = f"https://gitee.com/api/v5/repos/{repo_name}/contents/{file_path}"
+        # GitHub API配置
+        base_url = f"https://api.github.com/repos/{repo_name}/contents/{file_path}"
         
         headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Content-Type": "application/json;charset=UTF-8"
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "FastAPI-Uploader"
         }
         
         # 检查文件是否存在
-        check_params = {
-            "access_token": access_token,
-            "ref": branch
-        }
-        
-        response = requests.get(base_url, headers=headers, params=check_params)
+        response = requests.get(base_url, headers=headers)
         
         # 准备上传数据
         data = {
             "message": commit_message,
             "content": base64.b64encode(processed_content).decode('utf-8'),
-            "branch": branch,
-            "access_token": access_token
+            "branch": branch
         }
         
         # 如果文件已存在，需要提供sha
@@ -160,8 +155,8 @@ async def upload_file_to_gitee(
             file_info = response.json()
             data["sha"] = file_info["sha"]
         
-        # 上传文件到Gitee
-        upload_response = requests.post(base_url, headers=headers, json=data)
+        # 上传文件到GitHub（使用PUT方法）
+        upload_response = requests.put(base_url, headers=headers, json=data)
         
         if upload_response.status_code in [201, 200]:
             # 返回文件相对路径（直链路径）
@@ -188,14 +183,14 @@ async def upload_file_to_gitee(
 async def upload_file_simple(
     file: UploadFile = File(...),
     repo_name: str = Form(default="你的用户名/你的仓库名"),
-    branch: str = Form(default="master"),
+    branch: str = Form(default="main"),
     commit_message: str = Form(default="上传文件"),
     access_token: str = Form(...)
 ):
     """
     简化版上传接口 - 返回文件直链路径
     """
-    return await upload_file_to_gitee(
+    return await upload_file_to_github(
         repo_name=repo_name,
         branch=branch,
         commit_message=commit_message,
@@ -206,10 +201,10 @@ async def upload_file_simple(
 @app.get("/")
 async def root():
     return {
-        "message": "Gitee文件上传服务正常运行",
+        "message": "GitHub文件上传服务正常运行",
         "deployed_on": "Vercel",
         "usage": {
             "简化上传": "POST /upload-simple",
-            "返回格式": "文件相对路径，如：书源/笔趣阁.json"
+            "返回格式": "文件相对路径，如：book-sources/笔趣阁.json"
         }
     }
