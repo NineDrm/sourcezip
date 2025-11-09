@@ -182,21 +182,29 @@ async def upload_file_to_github(
 @app.post("/upload-simple")
 async def upload_file_simple(
     file: UploadFile = File(...),
-    repo_name: str = Form(default="你的用户名/你的仓库名"),
+    repo_name: str = Form(default="NineDrm/sourcezip"),
     branch: str = Form(default="main"),
-    commit_message: str = Form(default="上传文件"),
+    commit_message: str = Form(default="上传书源文件"),
     access_token: str = Form(...)
 ):
     """
-    简化版上传接口 - 返回文件直链路径
+    简化版上传接口 - 返回阅读APP期望的格式
     """
-    return await upload_file_to_github(
-        repo_name=repo_name,
-        branch=branch,
-        commit_message=commit_message,
-        access_token=access_token,
-        file=file
-    )
+    try:
+        file_path = await upload_file_to_github(
+            repo_name=repo_name,
+            branch=branch,
+            commit_message=commit_message,
+            access_token=access_token,
+            file=file
+        )
+        
+        # 返回阅读APP期望的成功格式 - 直接返回文件路径字符串
+        return file_path
+        
+    except HTTPException as e:
+        # 返回错误信息
+        return f"上传失败: {e.detail}"
 
 @app.get("/")
 async def root():
@@ -205,6 +213,37 @@ async def root():
         "deployed_on": "Vercel",
         "usage": {
             "简化上传": "POST /upload-simple",
-            "返回格式": "文件相对路径，如：book-sources/笔趣阁.json"
+            "返回格式": "文件相对路径字符串"
         }
     }
+
+# 新增测试接口
+@app.post("/test-upload")
+async def test_upload(
+    file: UploadFile = File(...),
+    access_token: str = Form(...)
+):
+    """
+    测试上传接口，返回详细结果
+    """
+    try:
+        file_path = await upload_file_to_github(
+            repo_name="NineDrm/sourcezip",
+            branch="main",
+            commit_message="测试上传",
+            access_token=access_token,
+            file=file
+        )
+        
+        return {
+            "success": True,
+            "message": "上传成功",
+            "file_path": file_path,
+            "download_url": f"https://raw.githubusercontent.com/NineDrm/sourcezip/main/{file_path}"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e)
+        }
