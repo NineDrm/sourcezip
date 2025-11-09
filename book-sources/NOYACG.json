@@ -1,0 +1,28 @@
+[
+  {
+    "bookSourceComment": "//by.九梦",
+    "bookSourceGroup": "[꧁九༺༒༻梦꧂]",
+    "bookSourceName": "NOYACG",
+    "bookSourceType": 0,
+    "bookSourceUrl": "https://noy1.top",
+    "customOrder": -3,
+    "enabled": true,
+    "enabledCookieJar": true,
+    "enabledExplore": true,
+    "exploreUrl": "阅读日榜::/#/readLeaderboard?page={{page}}\n阅读周榜::/#/readLeaderboard?t=week&page={{page}}\n阅读月榜::/#/readLeaderboard?t=moon&page={{page}}\n收藏日榜::/#/favLeaderboard?page={{page}}\n收藏周榜::/#/favLeaderboard?t=week&page={{page}}\n收藏月榜::/#/favLeaderboard?t=moon&page={{page}}\n高质量榜::/#/proportion?page={{page}}",
+    "header": "{\n  \"headers\": {\n    \"User-Agent\": \"Mozilla/5.0 (Linux; Android 15; 2411DRN47C Build/AQ3A.241213.002) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.6778.260 Mobile Safari/537.36\",\n    \"Referer\": \"https://noy1.top/#/readLeaderboard?page=1\"\n  }\n}",
+    "jsLib": "/**\n *cookieKey存在判断\n *作者:九梦\n * hckk - Has Cookie Key\n * @param {string} url - URL地址\n * @param {string} key - 要检查的cookie键名\n * @returns {boolean} 是否存在该cookie键\n */\nfunction hckk(url, key) {\n    if (typeof key !== 'string' || !key.trim()) {\n        this.java.log(\"\\nkey不存在或为空\");\n        return false;\n    }\n    let ck = this.cookie.getCookie(url);\n    if (!ck || ck === \"\") {\n        this.java.log(\"\\ncookie不存在或为空\");\n        return false;\n    }\n    const pattern = new RegExp(`(^|;)\\\\s*${key}=[^;]+`);\n    return pattern.test(ck);\n}\n\n\n\n/**\n * 全局双击确认函数\n * \n * 作者：九梦\n * \n * 功能：提供双击确认机制，防止误操作\n * 使用方式：confirmDoubleClick(操作名称, 回调函数)\n * \n * 场景说明：\n * - 第一次点击：提示\"再次点击执行[操作名称]操作\"\n * - 500ms内第二次点击：执行操作，提示\"✅ 已执行[操作名称]操作\"\n * - 500ms-3000ms内第二次点击：提示\"⏱️ 操作失败，请重新尝试\"\n * - 超过3000ms第二次点击：静默重置，当作第一次点击处理\n * \n * 示例：\n * confirmDoubleClick(\"退出登录\", function() {\n *     // 执行退出登录逻辑\n *     java.put('userToken', '');\n * });\n */\nfunction confirmDoubleClick(actionName, confirmCallback) {\n    var doubleClickTime = 500;    // 双击成功时间\n    var silentThreshold = 3000;   // 静默重置时间\n    \n    var storageKey = 'doubleClick_' + actionName;\n    var lastClickTime = parseInt(this.java.get(storageKey)) || 0;\n    var now = Date.now();\n    var timeDiff = now - lastClickTime;\n\n    // 超过静默阈值：当作第一次点击\n    if (lastClickTime !== 0 && timeDiff > silentThreshold) {\n        this.java.put(storageKey, String(now));\n        this.java.toast(\"\\n👆 再次点击将执行\" + actionName + \"操作\\n[已重置]\");\n        return false;\n    }\n\n    // 有效双击：执行操作\n    if (lastClickTime !== 0 && timeDiff <= doubleClickTime) {\n        this.java.put(storageKey, '0');\n        this.java.toast(\"\\n✅ 已执行\" + actionName + \"操作\");\n        confirmCallback();\n        return true;\n    }\n    \n    // 双击失败：提示重试\n    if (lastClickTime !== 0 && timeDiff > doubleClickTime) {\n        this.java.put(storageKey, '0');\n        this.java.toast(\"\\n⏱️ 操作失败，请重新尝试\");\n        return false;\n    }\n\n    // 第一次点击：等待确认\n    this.java.put(storageKey, String(now));\n    this.java.toast(\"\\n👆 再次点击将执行\" + actionName + \"操作\");\n    return false;\n}",
+    "lastUpdateTime": 1762663138271,
+    "loginUi": "[\n{\n    \"name\": \"用户名邮箱\",\n    \"type\": \"text\"\n  },\n  {\n    \"name\": \"密码\",\n    \"type\": \"password\"\n  },\n  {\n    \"name\": \"登录\",\n    \"type\": \"button\",\n    \"action\": \"login(true)\",\n    \"style\": {\n      \"layout_flexGrow\": 1,\n      \"layout_flexBasisPercent\": 0.4\n    }\n  },\n  {\n    \"name\": \"登出[双击]\",\n    \"type\": \"button\",\n    \"action\": \"logout()\",\n    \"style\": {\n      \"layout_flexGrow\": 1,\n      \"layout_flexBasisPercent\": 0.4\n    }\n  }\n]",
+    "loginUrl": "//基本参数\nconst ym=source.getKey();\n\nfunction login(b){\n\tif (b == undefined) return true;\n\tif (hckk(ym,\"NOY_SESSION\")){\n\t\treturn java.toast(\"\\n❗️已有帐号登入\\n如有需要请先登出\")\n\t\t}else{\n\tjava.toast(\"\\n🏇登录中\")\n\tconst info=result;\n\tconst user=info.用户名邮箱;\n\tconst pass=info.密码;\n\turlstr=`${ym}/api/login,{\n  \"body\": \"user=${user}&pass=${pass}\",\n  \"charset\": \"UTF-8\",\n  \"headers\": {\n  \t\"Referer\": \"https://noy1.top/#/login\"\n  \t},\n  \"method\": \"POST\"\n}`\nhtml=java.ajax(urlstr)\ntry{\nh=JSON.parse(html)\nif (h[\"status\"]===\"ok\"){\n\tjava.toast(`\\n✅登录成功，\\n♨️${user}♨️`)\n\t}else{\n\tjava.toast(\"\\n❌登录失败！请检查输入\")\n\t}\n}catch(e){\njava.longToast(`\\n⚠️登录失败:${e}!`)\n}\n}\n}\n\n\n\nfunction logout(){\nconfirmDoubleClick(\"退出登录\", function() {\n\tcookie.removeCookie(ym)\n});\n}",
+    "respondTime": 180000,
+    "ruleBookInfo": {},
+    "ruleContent": {},
+    "ruleExplore": {
+      "bookList": "a.dd-link"
+    },
+    "ruleSearch": {},
+    "ruleToc": {},
+    "weight": 0
+  }
+]
